@@ -27,8 +27,8 @@ jobs:
           - os: windows-latest
             python: "3.11"
     env:
-      HERMES_COMMIT: bd740f203b44237dbc5c27a2de4d86ef32af4dde
-      HERMES_SOURCE: ${{ runner.temp }}/hermes-agent
+      HERMES_COMMIT: 7fe1cb384e4f99aae3243c4c578904ac8c114b25
+      HERMES_SOURCE: ${{ github.workspace }}/.contract/hermes-agent
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
@@ -56,8 +56,8 @@ jobs:
     name: Build distributions
     runs-on: ubuntu-latest
     env:
-      HERMES_COMMIT: bd740f203b44237dbc5c27a2de4d86ef32af4dde
-      HERMES_SOURCE: ${{ runner.temp }}/hermes-agent
+      HERMES_COMMIT: 7fe1cb384e4f99aae3243c4c578904ac8c114b25
+      HERMES_SOURCE: ${{ github.workspace }}/.contract/hermes-agent
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
