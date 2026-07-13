@@ -49,8 +49,8 @@ jobs:
       - name: Lint
         if: runner.os == 'Linux' && matrix.python == '3.11'
         run: |
-          uv run ruff check .
-          uv run ruff format --check .
+          uv run ruff check __init__.py hermes_provider_cloudflare tests
+          uv run ruff format --check __init__.py hermes_provider_cloudflare tests
 
   package:
     name: Build distributions
