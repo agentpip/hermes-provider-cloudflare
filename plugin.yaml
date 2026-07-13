@@ -1,0 +1,13 @@
+name: cloudflare
+kind: model-provider
+version: 0.1.0
+description: Cloudflare Workers AI inference with native model discovery.
+license: MIT
+homepage: https://github.com/agentpip/hermes-provider-cloudflare
+requires_env:
+  - name: CLOUDFLARE_WORKERS_AI_API_TOKEN
+    description: Scoped Cloudflare API token with Workers AI access.
+    secret: true
+  - name: CLOUDFLARE_ACCOUNT_ID
+    description: Required unless CLOUDFLARE_WORKERS_AI_BASE_URL is configured.
+    secret: false

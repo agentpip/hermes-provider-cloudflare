@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: "3.11"
+          - os: ubuntu-latest
+            python: "3.12"
+          - os: ubuntu-latest
+            python: "3.13"
+          - os: macos-latest
+            python: "3.11"
+          - os: windows-latest
+            python: "3.11"
+    env:
+      HERMES_COMMIT: bd740f203b44237dbc5c27a2de4d86ef32af4dde
+      HERMES_SOURCE: ${{ runner.temp }}/hermes-agent
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
+      - name: Install Python and plugin development dependencies
+        run: |
+          uv python install ${{ matrix.python }}
+          uv sync --extra dev --python ${{ matrix.python }}
+      - name: Check out pinned Hermes contract source
+        shell: bash
+        run: |
+          git clone --filter=blob:none --no-checkout https://github.com/NousResearch/hermes-agent "$HERMES_SOURCE"
+          git -C "$HERMES_SOURCE" checkout "$HERMES_COMMIT"
+          uv pip install --python .venv --editable "$HERMES_SOURCE"
+      - name: Test
+        run: uv run pytest
+      - name: Lint
+        if: runner.os == 'Linux' && matrix.python == '3.11'
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+  package:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    env:
+      HERMES_COMMIT: bd740f203b44237dbc5c27a2de4d86ef32af4dde
+      HERMES_SOURCE: ${{ runner.temp }}/hermes-agent
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+      - run: |
+          uv python install 3.11
+          uv sync --extra dev --python 3.11
+          uv run python -m build
+      - name: Load wheel through the dedicated provider entry point
+        shell: bash
+        run: |
+          git clone --filter=blob:none --no-checkout https://github.com/NousResearch/hermes-agent "$HERMES_SOURCE"
+          git -C "$HERMES_SOURCE" checkout "$HERMES_COMMIT"
+          uv venv "${RUNNER_TEMP}/wheel-test" --python 3.11
+          uv pip install --python "${RUNNER_TEMP}/wheel-test" --editable "$HERMES_SOURCE"
+          uv pip install --python "${RUNNER_TEMP}/wheel-test" --no-deps dist/*.whl
+          HERMES_HOME="${RUNNER_TEMP}/hermes-home" \
+          CLOUDFLARE_ACCOUNT_ID=ci-account \
+          CLOUDFLARE_WORKERS_AI_API_TOKEN=ci-token \
+          "${RUNNER_TEMP}/wheel-test/bin/python" -c \
+            "from importlib.metadata import entry_points; from providers import get_provider_profile; ep=next(e for e in entry_points().select(group='hermes_agent.model_providers') if e.name=='cloudflare'); ep.load()(); p=get_provider_profile('workers-ai'); assert p and 'ci-account' in p.base_url"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: distributions
+          path: dist/*

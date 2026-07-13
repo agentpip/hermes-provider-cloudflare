@@ -1,0 +1,4 @@
+include __init__.py
+include plugin.yaml
+include CHANGELOG.md
+include CONTRIBUTING.md
